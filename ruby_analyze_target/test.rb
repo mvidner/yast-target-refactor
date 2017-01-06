@@ -16,23 +16,56 @@ class Target
   @targetName=nil
   @tgp={}
   @luns={}
-  def initialize()
-    printf("Initializing a target.\n")
+  def initialize(name)
+    printf("Initializing a target, name is %s.\n",name)
+    @targetName = name
   end
+end
+
+class TargetList
+  @target_list = nil
+  def print()
+    @target_list.each do |key,value|
+     p value
+    end
+  end
+  def initialize()
+    @target_list = Hash.new
+  end
+  def store_target(target_name)
+    @target_list.store(target_name,Target.new(target_name))
+  end
+
 end
 
 file = File.open("target.txt","r")
 str = File.readlines(file)    #This is an array
-#puts str
-re_iqn_target = Regexp.new(/iqn\.\d{4}\-\d{2}\.[\w\.]+\s\.+\s\[TPGs:\s\d+\]/)
-#re = Regexp.new(/iqn\.\d{4}-\d{2}\.[\w.]+\s\.*\s\[TPGs:\s\d+\]'\|'eui\.\w+\s\.*\s\[TPGs:\s\d+\]/)
-#a = /iqn\.\d{4}-\d{2}\.[\w\.]+\s\.+\s\[TPGs:\s\d+\]/.match("iqn.2016-12.tst.com ..... [TPGs: 1]")
-iqn_results = re_iqn_target.match("iqn.2017-01.suse.com ........... [TPGs: 12]")
-puts iqn_results
+
+re_iqn_target = Regexp.new(/iqn\.\d{4}\-\d{2}\.[\w\.:\-]+\s\.+\s\[TPGs:\s\d+\]/)
+re_iqn_name = Regexp.new(/iqn\.\d{4}-\d{2}\.[\w\.:\-]+/)
 re_eui_target = Regexp.new(/eui\.\w+\s\.+\s\[TPGs:\s\d+\]/)
-eui_results = re_eui_target.match("eui.abcdef00123 ............... [TPGs: 22]")
-puts eui_results
-TargetList = []
+re_eui_name = Regexp.new(/eui\.\w+/)
 
-test = Target.new
+iqn_name= nil
+eui_name= nil
+targets_list = TargetList.new
 
+str.each do |line|
+  if re_iqn_target.match(line)
+    #puts line
+    if iqn_name = re_iqn_name.match(line)
+     # puts iqn_name
+	    targets_list.store_target(iqn_name.to_s)
+    end
+  end
+  
+  if re_eui_target.match(line)
+    #puts line
+    if eui_name = re_eui_name.match(line)
+     # puts eui_name
+      targets_list.store_target(eui_name.to_s)
+    end
+  end
+end
+
+targets_list.print()
