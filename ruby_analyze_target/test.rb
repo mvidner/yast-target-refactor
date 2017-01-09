@@ -34,6 +34,7 @@ class TargetList
   end
   def store_target(target_name)
     @target_list.store(target_name,Target.new(target_name))
+    
   end
 
 end
@@ -45,9 +46,11 @@ re_iqn_target = Regexp.new(/iqn\.\d{4}\-\d{2}\.[\w\.:\-]+\s\.+\s\[TPGs:\s\d+\]/)
 re_iqn_name = Regexp.new(/iqn\.\d{4}-\d{2}\.[\w\.:\-]+/)
 re_eui_target = Regexp.new(/eui\.\w+\s\.+\s\[TPGs:\s\d+\]/)
 re_eui_name = Regexp.new(/eui\.\w+/)
+re_tpg = Regexp.new(/tpg\d+\s/)
 
 iqn_name= nil
 eui_name= nil
+tpg_name = nil
 targets_list = TargetList.new
 
 str.each do |line|
@@ -55,8 +58,8 @@ str.each do |line|
     #puts line
     if iqn_name = re_iqn_name.match(line)
      # puts iqn_name
-	    targets_list.store_target(iqn_name.to_s)
-    end
+      targets_list.store_target(iqn_name.to_s)
+    end    
   end
   
   if re_eui_target.match(line)
@@ -68,4 +71,10 @@ str.each do |line|
   end
 end
 
-targets_list.print()
+str.each do |line|
+  if tpg_name = re_tpg.match(line)
+    p tpg_name.to_s.strip
+  end
+end
+
+#targets_list.print()
