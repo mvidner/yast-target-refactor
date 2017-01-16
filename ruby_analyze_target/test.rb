@@ -5,6 +5,8 @@ class ACL
   @password = nil
   @mutual_userid = nil
   @multual_password = nil
+  def initialize(name)
+    @initiator_name = name
 end
 
 class TPG
@@ -61,8 +63,9 @@ re_iqn_name = Regexp.new(/iqn\.\d{4}-\d{2}\.[\w\.:\-]+/)
 re_eui_target = Regexp.new(/eui\.\w+\s\.+\s\[TPGs:\s\d+\]/)
 re_eui_name = Regexp.new(/eui\.\w+/)
 re_tpg = Regexp.new(/tpg\d+\s/)
+re_iqn_acl = Regexp.new(/acls\s\.+\s\[ACLs\:\s\d+\]/)
+re_iqn_initaitor = Regexp.new(/iqn\.\d{4}\-\d{2}\.[\w\.:\-]+\s\.+\[/)
 
-re_iqn_acl = Regexp.new(/iqn\.\d{4}\-\d{2}\.[\w\.:\-]+\s\.+\s\[[\w\sauth\w\s]\]/)
 #iqn_name or eui_name would be a MatchData, but target_name would be a string.
 iqn_name= nil
 eui_name= nil
