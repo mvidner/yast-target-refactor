@@ -82,8 +82,8 @@ class TargetList
 end
 
 file = File.open("target.txt","r")
-str = File.readlines(file)    #This is an array
-
+#str = File.readlines(file)    #This is an array
+str = `targetcli ls`.split("\n") #This is an arrry now
 re_iqn_target = Regexp.new(/iqn\.\d{4}\-\d{2}\.[\w\.:\-]+\s\.+\s\[TPGs:\s\d+\]/)
 re_iqn_name = Regexp.new(/iqn\.\d{4}-\d{2}\.[\w\.:\-]+/)
 
