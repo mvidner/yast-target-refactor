@@ -1,8 +1,15 @@
-#class ACL is the acls group
-class ACL
-  rules_hash_list = nil
+#class ACL_group is the acls group under a iSCSI entry
+class ACL_group
+  initiator_rules_hash_list = nil
   def initialize()
-    rules_hash_list = Hash.new
+    #puts "initialized a acls group"
+    @initiator_rules_hash_list = Hash.new
+  end
+  def store_rule(name)
+    @initiator_rules_hash_list.store(name, ACL_rule.new(name))
+  end
+  def fetch_rule(name)
+    @initaitor_rules_hash_list.fetch(name)
   end
 end
 
@@ -14,6 +21,9 @@ class ACL_rule
   @password = nil
   @mutual_userid = nil
   @multual_password = nil
+  def initialize(name)
+    @initiator_name =name
+  end
 end
 
 class TPG
@@ -28,7 +38,7 @@ class TPG
   #in the hash. The key is fixed "acls" in store and fetch. We have a paremeter acls_name 
   #in store_acl() and fetch_acl() for further update. 
   def store_acls(acls_name)
-    @acls_hash_list.store("acls", ACL.new())
+    @acls_hash_list.store("acls", ACL_group.new())
   end
   def fetch_acls(acls_name)
      @acls_hash_list.fetch("acls")
@@ -76,11 +86,16 @@ str = File.readlines(file)    #This is an array
 
 re_iqn_target = Regexp.new(/iqn\.\d{4}\-\d{2}\.[\w\.:\-]+\s\.+\s\[TPGs:\s\d+\]/)
 re_iqn_name = Regexp.new(/iqn\.\d{4}-\d{2}\.[\w\.:\-]+/)
+
 re_eui_target = Regexp.new(/eui\.\w+\s\.+\s\[TPGs:\s\d+\]/)
 re_eui_name = Regexp.new(/eui\.\w+/)
+
 re_tpg = Regexp.new(/tpg\d+\s/)
-re_acls = Regexp.new(/acls\s\.+\s\[ACLs\:\s\d+\]/)
-re_acl_iqn = Regexp.new(/iqn\.\d{4}\-\d{2}\.[\w\.:\-]+\s\.+\s\[[\w\-\s\,]*Mapped\sLUNs\:\s\d+\]/)
+
+re_acls_group = Regexp.new(/acls\s\.+\s\[ACLs\:\s\d+\]/)
+
+re_acl_iqn_rule = Regexp.new(/iqn\.\d{4}\-\d{2}\.[\w\.:\-]+\s\.+\s\[[\w\-\s\,]*Mapped\sLUNs\:\s\d+\]/)
+re_acl_eui_rule = Regexp.new(/eui\.\w+\s\.+\s\[[\w\-\s\,]*Mapped\sLUNs\:\s\d+\]/)
 
 #iqn_name or eui_name would be a MatchData, but target_name would be a string.
 iqn_name= nil
@@ -95,7 +110,9 @@ current_target = nil
 # A pointer points to the tpg in the target that we are handling.
 current_tpg = nil
 # A pointer points to the acls group
-current_acls = nil
+current_acls_group = nil
+#A pointer points to the acl rule for a specific initiator we are handling
+current_acl_rule = nil
 
 targets_list = TargetList.new
 
@@ -134,16 +151,24 @@ str.each do |line|
   end
 
 #handle ACLs here
-  if re_acls.match(line)
+  if re_acls_group.match(line)
      puts line
      current_tpg.store_acls("acls")
-     current_acls = current_tpg.fetch_acls("acls")
+     current_acls_group = current_tpg.fetch_acls("acls")
   end
-  #handle the rule for one specific initiator here
-  if re_acl_iqn.match(line)
+  #handle the rule for one specific IQN initiator here
+  if re_acl_iqn_rule.match(line)
     puts line
-    iqn_name = re_iqn_name.match(line).to_s
-    puts iqn_name
+    target_name = re_iqn_name.match(line).to_s
+    puts target_name
+    current_acls_group.store_rule(target_name)
+  end
+  #handle the rule for one specific EUI initiator here
+  if re_acl_eui_rule.match(line)
+    puts line
+    target_name = re_eui_name.match(line).to_s
+    puts target_name
+    current_acls_group.store_rule(target_name)
   end
   
 end
