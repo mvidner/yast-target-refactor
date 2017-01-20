@@ -1,89 +1,5 @@
-#class ACL_group is the acls group under a iSCSI entry
-class ACL_group
-  initiator_rules_hash_list = nil
-  def initialize()
-    #puts "initialized a acls group"
-    @initiator_rules_hash_list = Hash.new
-  end
-  def store_rule(name)
-    @initiator_rules_hash_list.store(name, ACL_rule.new(name))
-  end
-  def fetch_rule(name)
-    @initaitor_rules_hash_list.fetch(name)
-  end
-end
+require './utils.rb'
 
-#class ACL_rule is the acl rule for a specific initaitor
-class ACL_rule
-  @initiator_name = nil
-  @mapped_luns = nil
-  @userid = nil
-  @password = nil
-  @mutual_userid = nil
-  @multual_password = nil
-  def initialize(name)
-    @initiator_name =name
-  end
-end
-
-class TPG
-  @tpg_number = nil
-  @acls_hash_list = nil
-  def initialize(number)
-    #printf("Create a TPG with number %d.\n",number)
-    @tpg_number = number
-    @acls_hash_list = Hash.new 
-  end
-  #for now, we only have one acl group in a tpg, called "acls", so we only have one key-value pair
-  #in the hash. The key is fixed "acls" in store and fetch. We have a paremeter acls_name 
-  #in store_acl() and fetch_acl() for further update. 
-  def store_acls(acls_name)
-    @acls_hash_list.store("acls", ACL_group.new())
-  end
-  def fetch_acls(acls_name)
-     @acls_hash_list.fetch("acls")
-  end 
-end
-
-class Target
-  @targetName=nil
-  @tpg_hash_list=nil
-  @luns={}
-  def initialize(name)
-    #printf("Initializing a target, name is %s.\n",name)
-    @targetName = name
-    @tpg_hash_list = Hash.new
-  end
-  def store_tpg(tpg_number)
-    @tpg_hash_list.store(tpg_number, TPG.new(tpg_number))
-  end
-  def fetch_tpg(tpg_number)
-     @tpg_hash_list.fetch(tpg_number)
-  end
-end
-
-class TargetList
-  @target_hash_list = nil
-  def print()
-    @target_hash_list.each do |key, value|
-     p value
-    end
-  end
-  def initialize()
-    @target_hash_list = Hash.new
-  end
-  def store_target(target_name)
-    @target_hash_list.store(target_name, Target.new(target_name))
-  end
-  def fetch_target(target_name)
-     @target_hash_list.fetch(target_name)
-  end
-
-end
-
-file = File.open("target.txt","r")
-#str = File.readlines(file)    #This is an array
-str = `targetcli ls`.split("\n") #This is an arrry now
 re_iqn_target = Regexp.new(/iqn\.\d{4}\-\d{2}\.[\w\.:\-]+\s\.+\s\[TPGs:\s\d+\]/)
 re_iqn_name = Regexp.new(/iqn\.\d{4}-\d{2}\.[\w\.:\-]+/)
 
@@ -101,9 +17,14 @@ re_acl_eui_rule = Regexp.new(/eui\.\w+\s\.+\s\[[\w\-\s\,]*Mapped\sLUNs\:\s\d+\]/
 iqn_name= nil
 eui_name= nil
 target_name = nil
+initiator_name =  nil
+
 #tgp_name would be a MatchData, but tgp_num should be a string.
 tpg_name = nil
 tpg_num = nil
+
+#will store anything match our regexp
+match = nil
 
 # A pointer points to the target in the list that we are handling.
 current_target = nil
@@ -114,7 +35,21 @@ current_acls_group = nil
 #A pointer points to the acl rule for a specific initiator we are handling
 current_acl_rule = nil
 
+
+file = File.open("target.txt","r")
+#str = File.readlines(file)    #This is an array
+#TODO: Need to add some error handling code here, like failed to start the service.
+str = `targetcli ls`.split("\n") #This is an arrry now, so that we can analyze the lines one by one
+
 targets_list = TargetList.new
+
+#The function handles a rule for one specific initiator
+#def handle_acl_rule(match)
+  #initiator_name = match.to_s
+  #puts initiator_name	
+  #current_acls_group.store_rule(initiator_name)
+  #current_acl_rule = $current_acls_group.fetch_rule(initiator_name)
+#end
 
 str.each do |line|
   #handle iqn targets here.
@@ -150,27 +85,26 @@ str.each do |line|
     current_tpg = current_target.fetch_tpg(tpg_num.to_s.strip)
   end
 
-#handle ACLs here
+#handle ACLs group here
   if re_acls_group.match(line)
      puts line
      current_tpg.store_acls("acls")
      current_acls_group = current_tpg.fetch_acls("acls")
   end
-  #handle the rule for one specific IQN initiator here
-  if re_acl_iqn_rule.match(line)
+  
+#handle acl rules here
+  if match = re_acl_iqn_rule.match(line) || match = re_acl_eui_rule.match(line)
     puts line
-    target_name = re_iqn_name.match(line).to_s
-    puts target_name
-    current_acls_group.store_rule(target_name)
+    #handle_acl_rule(match)
+    initiator_name = match.to_s
+    puts initiator_name	
+    current_acls_group.store_rule(initiator_name)
+    current_acl_rule = current_acls_group.fetch_rule(initiator_name)
   end
-  #handle the rule for one specific EUI initiator here
-  if re_acl_eui_rule.match(line)
-    puts line
-    target_name = re_eui_name.match(line).to_s
-    puts target_name
-    current_acls_group.store_rule(target_name)
-  end
+  
+  #get authentication information: userid, password, mutual_userid and mutual_password here.
+  #puts "targetcli get auth #{current_target}"
   
 end
 
-targets_list.print()
+#targets_list.print()
