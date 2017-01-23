@@ -611,9 +611,9 @@
               "chap_userid": "lszhu", 
               "mapped_luns": [
                 {
-                  "alias": "c652fd743f", 
+                  "alias": "9f17360c44", 
                   "index": 6, 
-                  "tpg_lun": 3, 
+                  "tpg_lun": 0, 
                   "write_protect": false
                 }, 
                 {

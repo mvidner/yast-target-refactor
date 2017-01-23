@@ -23,14 +23,14 @@ end
 #class ACL_rule is the acl rule for a specific initaitor
 class ACL_rule
   @initiator_name = nil
-  @mapped_luns = nil
   @userid = nil
   @password = nil
   @mutual_userid = nil
   @multual_password = nil
-  @up_level_ACL_group = nil
+  @mapped_luns_hash_list = nil
   def initialize(name)
     @initiator_name =name
+    @mapped_luns_hash_list = Hash.new
   end
   def store_userid(id)
     @userid = id
@@ -55,6 +55,34 @@ class ACL_rule
   end
   def fetch_mutual_password()
     @mutual_password
+  end
+  def store_mapped_lun(mapping_lun_number)
+    @mapped_luns_hash_list.store(mapping_lun_number, Mapped_LUN.new(mapping_lun_number))
+  end
+  def fetch_mapped_lun(mapping_lun_number)
+     @mapped_luns_hash_list.fetch(mapping_lun_number)
+  end 
+end
+
+class Mapped_LUN
+  @mapping_lun_number = nil
+  @mapped_lun_number = nil
+
+  def initialize(mapping_lun_num)
+    @mapping_lun_number = mapping_lun_num
+  end
+  
+  def store_mapping_lun_number(num)
+    @mapping_lun_number = num
+  end
+  def store_mapped_lun_number(num)
+    @mapped_lun_number = num
+  end
+  def fetch_mapping_lun_number()
+    @mapping_lun_number
+  end
+  def fetch_mapped_lun_number()
+    @mapped_lun_number
   end
 end
 
