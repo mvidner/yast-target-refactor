@@ -35,6 +35,10 @@ current_acls_group = nil
 #A pointer points to the acl rule for a specific initiator we are handling
 current_acl_rule = nil
 
+# the command need to execute  and the result
+cmd = nil
+cmd_out = nil
+
 
 file = File.open("target.txt","r")
 #str = File.readlines(file)    #This is an array
@@ -60,8 +64,7 @@ str.each do |line|
       target_name=iqn_name.to_s
       targets_list.store_target(target_name)
       current_target = targets_list.fetch_target(target_name)
-      #p current_target
-    end    
+    end
   end
 
   #handle eui targets here.
@@ -72,7 +75,6 @@ str.each do |line|
       target_name=eui_name.to_s
       targets_list.store_target(target_name)
       current_target = targets_list.fetch_target(target_name)
-      #p current_target
     end
   end
 
@@ -87,24 +89,73 @@ str.each do |line|
 
 #handle ACLs group here
   if re_acls_group.match(line)
-     puts line
+     #puts line
      current_tpg.store_acls("acls")
      current_acls_group = current_tpg.fetch_acls("acls")
   end
   
-#handle acl rules here
-  if match = re_acl_iqn_rule.match(line) || match = re_acl_eui_rule.match(line)
-    puts line
+#handle acl rules for an IQN initaitor here
+  if re_acl_iqn_rule.match(line)
+    #puts line
     #handle_acl_rule(match)
-    initiator_name = match.to_s
-    puts initiator_name	
+    initiator_name = re_iqn_name.match(line).to_s
+    #puts initiator_name	
     current_acls_group.store_rule(initiator_name)
     current_acl_rule = current_acls_group.fetch_rule(initiator_name)
+    #get authentication information here.
+    #get userid
+    cmd = "targetcli iscsi/" + current_target.fetch_target_name() + "/tpg" + current_tpg.fetch_tpg_number() + "/acls/" + initiator_name + "/ get auth userid"
+    cmd_out = `#{cmd}`
+    current_acl_rule.store_userid(cmd_out[7 , cmd.length])
+    puts current_acl_rule.fetch_userid()
+    #get password
+    cmd = "targetcli iscsi/" + current_target.fetch_target_name() + "/tpg" + current_tpg.fetch_tpg_number() + "/acls/" + initiator_name + "/ get auth password"
+    cmd_out = `#{cmd}`
+    current_acl_rule.store_password(cmd_out[9 , cmd.length])
+    puts current_acl_rule.fetch_password()
+    #get mutual_userid
+    cmd = "targetcli iscsi/" + current_target.fetch_target_name() + "/tpg" + current_tpg.fetch_tpg_number() + "/acls/" + initiator_name + "/ get auth mutual_userid"
+    cmd_out = `#{cmd}`
+    current_acl_rule.store_mutual_userid(cmd_out[14 , cmd.length])
+    puts current_acl_rule.fetch_mutual_userid()
+    #get mutual_password
+    cmd = "targetcli iscsi/" + current_target.fetch_target_name() + "/tpg" + current_tpg.fetch_tpg_number() + "/acls/" + initiator_name + "/ get auth mutual_password"
+    cmd_out = `#{cmd}`
+    current_acl_rule.store_mutual_password(cmd_out[16 , cmd.length])
+    puts current_acl_rule.fetch_mutual_password()
+
+    
+  end
+#handle acl rules for an EUI initaitor here
+  if re_acl_eui_rule.match(line)
+    #puts line
+    #handle_acl_rule(match)
+    initiator_name = re_eui_name.match(line).to_s
+    #puts initiator_name	
+    current_acls_group.store_rule(initiator_name)
+    current_acl_rule = current_acls_group.fetch_rule(initiator_name)
+    #get authentication information here.
+    #get userid
+    cmd = "targetcli iscsi/" + current_target.fetch_target_name() + "/tpg" + current_tpg.fetch_tpg_number() + "/acls/" + initiator_name + "/ get auth userid"
+    cmd_out = `#{cmd}`
+    current_acl_rule.store_userid(cmd_out[7 , cmd.length])
+    puts current_acl_rule.fetch_userid()
+    #get password
+    cmd = "targetcli iscsi/" + current_target.fetch_target_name() + "/tpg" + current_tpg.fetch_tpg_number() + "/acls/" + initiator_name + "/ get auth password"
+    cmd_out = `#{cmd}`
+    current_acl_rule.store_password(cmd_out[9 , cmd.length])
+    puts current_acl_rule.fetch_password()
+    #get mutual_userid
+    cmd = "targetcli iscsi/" + current_target.fetch_target_name() + "/tpg" + current_tpg.fetch_tpg_number() + "/acls/" + initiator_name + "/ get auth mutual_userid"
+    cmd_out = `#{cmd}`
+    current_acl_rule.store_mutual_userid(cmd_out[14 , cmd.length])
+    puts current_acl_rule.fetch_mutual_userid()
+    #get mutual_password
+    cmd = "targetcli iscsi/" + current_target.fetch_target_name() + "/tpg" + current_tpg.fetch_tpg_number() + "/acls/" + initiator_name + "/ get auth mutual_password"
+    cmd_out = `#{cmd}`
+    current_acl_rule.store_mutual_password(cmd_out[16 , cmd.length])
+    puts current_acl_rule.fetch_mutual_password()
   end
   
-  #get authentication information: userid, password, mutual_userid and mutual_password here.
-  #puts "targetcli get auth #{current_target}"
-  
 end
-
-#targets_list.print()
+targets_list.print()

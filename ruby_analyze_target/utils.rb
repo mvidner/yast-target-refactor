@@ -67,6 +67,9 @@ class TPG
     @tpg_number = number
     @acls_hash_list = Hash.new 
   end
+  def fetch_tpg_number()
+    @tpg_number
+  end
   #for now, we only have one acl group in a tpg, called "acls", so we only have one key-value pair
   #in the hash. The key is fixed "acls" in store and fetch. We have a paremeter acls_name 
   #in store_acl() and fetch_acl() for further update. 
