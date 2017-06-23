@@ -1,0 +1,3 @@
+<mvidner> Hi! your other account disconnected right after I replied, so I repeat:
+<mvidner> We now prefer Yast::Execute http://www.rubydoc.info/github/yast/yast-yast2/Yast/Execute (which is a wrapper for Cheetah http://www.rubydoc.info/github/openSUSE/cheetah/Cheetah.run )
+<mvidner> The main advantage of Cheetah is avoiding using the shell, with its quoting and escaping traps
