@@ -443,6 +443,13 @@ module Yast
     include Yast::I18n
     include Yast::UIShortcuts
     include Yast::Logger
+    require './src/clients/TargetData.rb'
+
+    def initialize
+       TargetData.test
+       p TargetData.GetNetConfig
+       
+    end
 
     def run
       textdomain "example"
