@@ -1,8 +1,12 @@
 require "yast"
+require "yast2/execute"
 
 module Yast
   class TargetDataClass
     def test
+       files = Yast::Execute.locally("ls", "-la", stdout: :capture)
+       #files = Cheetah.run("ls", "-la", stdout: :capture)
+       p files
        puts "testtesttest111111"
     end
     #
