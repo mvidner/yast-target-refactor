@@ -1,7 +1,7 @@
 # Simple example to demonstrate object API for CWM
 
 require_relative "example_helper"
-
+require './src/clients/TargetData.rb'
 require "cwm/widget"
 
 Yast.import "CWM"
@@ -323,9 +323,46 @@ class IpSelectionComboBox < CWM::ComboBox
     puts self.value
     puts get_addr
   end
+  
+  def GetNetConfig
+     ip_list = Array.new
+     re_ipv4 = Regexp.new(/[\d+\.]+\//)
+     re_ipv6 = Regexp.new(/[\w+\:]+\//)
+     ret = Yast::Execute.locally("ip", "a", stdout: :capture)
+     ip = ret.split("\n")
+     ip.each do |line|
+       line = line.strip
+       if(line.include?("inet") && !line.include?("deprecated")) # don't show deprecated IPs
+         if line.include?("inet6")
+           ip_str = re_ipv6.match(line).to_s.gsub!("/","")
+           if ip_str.start_with?("::1")
+             next
+           elsif ip_str.start_with?("fe80:")
+             next
+           else
+             p ip_str
+             ip_list.push(ip_str)
+           end
+         else
+           #delete "/", and drop 127.x.x.x locall address
+           ip_str = re_ipv4.match(line).to_s.gsub!("/","")
+           #p ip_str
+           if ip_str.start_with?("127.")
+             next
+           else
+             p ip_str
+             ip_list.push(ip_str)
+           end
+         end
+       end
+     end
+     puts "testtesttest111111"
+     return ip_list
+  end
 
   def addresses
-    ["first", "second", "third"]
+    #["first", "second", "third","forth"]
+    self.GetNetConfig
   end
   
   def items
@@ -446,9 +483,8 @@ module Yast
     require './src/clients/TargetData.rb'
 
     def initialize
-       TargetData.test
-       p TargetData.GetNetConfig
-       
+       #TargetData.test
+       #p TargetData.GetNetConfig
     end
 
     def run
