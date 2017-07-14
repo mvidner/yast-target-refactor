@@ -35,6 +35,55 @@ class NoDiscoveryAuth_widget < ::CWM::CheckBox
   end
 end
 
+class BindAllIP < ::CWM::CheckBox
+  def initialize()
+    textdomain "example"
+  end
+  def label
+    _("Bind all IP addresses")
+  end
+#auto called from Yast
+  def init
+    self.value = true #TODO read config
+  end
+
+  def store
+    puts "IT IS #{value}!!!"
+  end
+
+  def handle 
+    puts "Changed!"
+  end
+
+  def opt
+    [:notify]
+  end
+end
+
+class UseLoginAuth < ::CWM::CheckBox
+  def initialize()
+    textdomain "example"
+  end
+  def label
+    _("Use Login Authentication")
+  end
+#auto called from Yast
+  def init
+    self.value = true #TODO read config
+  end
+
+  def store
+    puts "IT IS #{value}!!!"
+  end
+
+  def handle 
+    puts "Changed!"
+  end
+
+  def opt
+    [:notify]
+  end
+end
 
 
 class Auth_by_Initiators_widget < ::CWM::CheckBox
@@ -418,12 +467,14 @@ class AddTargetWidget < CWM::CustomWidget
   @target_identifier_input_field = nil
   @target_portal_group_field = nil
   @target_port_num_field = nil
+  @target_bind_all_ip_checkbox = nil
   def initialize
     self.handle_all_events = true
     @target_name_input_field = TargetNameInput.new("iqn.2017-04.suse.com.prg.test")
     @target_identifier_input_field = TargetIdentifierInput.new("Random 12345")
     @target_portal_group_field = PortalGroupInput.new(5)
     @target_port_num_field = TargetPortNumberInput.new(3260)
+    #@target_bind_all_ip_checkbox = BindAllIP.new()
   end
 
   def contents
@@ -436,7 +487,11 @@ class AddTargetWidget < CWM::CustomWidget
       ),
       HBox(
         IpSelectionComboBox.new,
-        @target_port_num_field
+        @target_port_num_field,
+      ),
+      VBox(
+        BindAllIP.new,
+        UseLoginAuth.new,
       )
     )
   end
