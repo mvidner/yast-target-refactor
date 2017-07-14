@@ -305,6 +305,31 @@ class PortalGroupInput < CWM::IntField
   end
 end
 
+class TargetPortNumberInput < CWM::IntField
+  def initialize(str)
+    @config = str
+  end
+
+  def label
+    _("Port Number")
+  end
+
+  def init
+    self.value = @config
+    printf("Target port number InputField init, got default value %s.\n",@config)
+  end
+
+  def store
+    @config = value
+    printf("Target port number will store the value %s.\n", @config)
+  end
+
+  def minimum
+    return 0
+  end
+end
+
+
 class IpSelectionComboBox < CWM::ComboBox
   def initialize()
     #@config = myconfig
@@ -391,12 +416,14 @@ class AddTargetWidget < CWM::CustomWidget
   include Yast::Logger
   @target_name_input_field = nil
   @target_identifier_input_field = nil
-  @target_portal_group = nil
+  @target_portal_group_field = nil
+  @target_port_num_field = nil
   def initialize
     self.handle_all_events = true
     @target_name_input_field = TargetNameInput.new("iqn.2017-04.suse.com.prg.test")
     @target_identifier_input_field = TargetIdentifierInput.new("Random 12345")
     @target_portal_group_field = PortalGroupInput.new(5)
+    @target_port_num_field = TargetPortNumberInput.new(3260)
   end
 
   def contents
@@ -407,7 +434,10 @@ class AddTargetWidget < CWM::CustomWidget
         @target_identifier_input_field,
         @target_portal_group_field
       ),
-      IpSelectionComboBox.new,
+      HBox(
+        IpSelectionComboBox.new,
+        @target_port_num_field
+      )
     )
   end
 
@@ -416,6 +446,7 @@ class AddTargetWidget < CWM::CustomWidget
     puts @target_name_input_field.value
     puts @target_identifier_input_field.value
     puts @target_portal_group_field.value
+    puts @target_port_num_field.value
     nil
   end
 end
