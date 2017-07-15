@@ -492,7 +492,8 @@ class AddTargetWidget < CWM::CustomWidget
       VBox(
         BindAllIP.new,
         UseLoginAuth.new,
-      )
+      ),
+      LUNsTableWidget.new,
     )
   end
 
@@ -549,6 +550,56 @@ class TargetsTableWidget < CWM::CustomWidget
         Yast::Wizard.CreateDialog
         CWM.show(contents, caption: _("Add iSCSI Target"))
          Yast::Wizard.CloseDialog
+         
+     end
+     nil
+  end
+
+  def help
+    _("demo help")
+  end
+end
+
+class LUNsTableWidget < CWM::CustomWidget
+  include Yast
+  include Yast::I18n
+  include Yast::UIShortcuts
+  include Yast::Logger
+  def initialize
+    self.handle_all_events = true
+  end
+
+  def contents
+    VBox(
+      Table(
+         Id(:targets_table),
+         Header("LUN", "Name", "path"),
+           [
+             Item(Id(1), "0", "test_lun","/test/test"),
+           ]
+       ),
+       HBox(
+         PushButton(Id(:add), _("Add")),
+         PushButton(Id(:edit), _("Edit")),
+         PushButton(Id(:delete), _("Delete"))
+       )
+  )
+  end
+
+  def handle(event)
+    puts event
+    case event["ID"]
+      when :add
+        puts "Clicked Add button!"
+        #puts Yast::UI.QueryWidget(Id(:targets_table), :CurrentItem)
+        #puts Yast::UI.QueryWidget(Id(:targets_table), :Items)
+        #Yast::UI.ChangeWidget(Id(:targets_table), Cell(1, 1), "testtest")
+        #add_target_page = AddTargetWidget.new
+        #contents = VBox(add_target_page,HStretch(),VStretch())
+ 
+        #Yast::Wizard.CreateDialog
+        #CWM.show(contents, caption: _("Add iSCSI Target"))
+         #Yast::Wizard.CloseDialog
          
      end
      nil
