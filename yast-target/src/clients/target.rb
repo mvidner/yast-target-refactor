@@ -5,8 +5,14 @@ require './src/clients/TargetData.rb'
 require "cwm/widget"
 
 Yast.import "CWM"
+Yast.import "CWMTab"
+Yast.import "TablePopup"
+Yast.import "CWMServiceStart"
 Yast.import "Popup"
 Yast.import "Wizard"
+Yast.import "CWMFirewallInterfaces"
+Yast.import "Service"
+Yast.import "CWMServiceStart"
 
 
 
@@ -220,28 +226,49 @@ class MutualPassword < CWM::InputField
   end
 end
 
+module Yast
+  class ServiceTab < ::CWM::Tab
+    #@fire_wall_service = nil
+    include Yast::I18n
+    include Yast::UIShortcuts
+    def initialize
+     #Yast.import "SuSEFirewall"
+      self.initial = false
+      #@fire_wall_service = Yast::FirewallServices.new
+    end
 
-class ServiceTab < ::CWM::Tab
-  #@fire_wall_service = nil
-  def initialize
-   #Yast.import "SuSEFirewall"
-    #self.initial = false
-    #@fire_wall_service = Yast::FirewallServices.new
-  end
+    # get/set service accessors for CWMService component
+    def GetStartService
+      status = Service.Enabled("target")
+      Builtins.y2milestone("target service status %1", status)
+      status
+    end
 
-  def contents
-    VBox(
-      HStretch(),
-      VStretch(),
-      #fire_wall_service.create(sf2)
-    )
-  end
+    def SetStartService(status)
+      Builtins.y2milestone("Set service status %1", status)
+      @serviceStatus = status
+      if status == true
+        Service.Enable("target")
+      else
+        Service.Disable("target")
+      end
+      nil
+    end
+
+    def contents
+      HBox(
+         ::CWM::WrapperWidget.new(
+           CWMFirewallInterfaces.CreateOpenFirewallWidget("services" => ["service:sshd"]),
+           id: "firewall"
+         ),
+       )
+    end
   
-  def label
-    _("Service")
+    def label
+      _("Service")
+    end
   end
 end
-
 class GlobalTab < ::CWM::Tab
   def initialize
     self.initial = true
