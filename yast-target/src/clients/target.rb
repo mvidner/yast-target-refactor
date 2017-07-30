@@ -3,6 +3,8 @@
 require_relative "example_helper"
 require './src/clients/TargetData.rb'
 require "cwm/widget"
+require "ui/service_status"
+require "yast"
 
 Yast.import "CWM"
 Yast.import "CWMTab"
@@ -13,6 +15,7 @@ Yast.import "Wizard"
 Yast.import "CWMFirewallInterfaces"
 Yast.import "Service"
 Yast.import "CWMServiceStart"
+Yast.import "UI"
 
 
 
@@ -234,25 +237,9 @@ module Yast
     def initialize
      #Yast.import "SuSEFirewall"
       self.initial = false
+      @service = Yast::SystemdService.find("targetcli")
+      @service_status = ::UI::ServiceStatus.new(@service, reload_flag: true, reload_flag_label: :restart)
       #@fire_wall_service = Yast::FirewallServices.new
-    end
-
-    # get/set service accessors for CWMService component
-    def GetStartService
-      status = Service.Enabled("target")
-      Builtins.y2milestone("target service status %1", status)
-      status
-    end
-
-    def SetStartService(status)
-      Builtins.y2milestone("Set service status %1", status)
-      @serviceStatus = status
-      if status == true
-        Service.Enable("target")
-      else
-        Service.Disable("target")
-      end
-      nil
     end
 
     def contents
@@ -261,6 +248,7 @@ module Yast
            CWMFirewallInterfaces.CreateOpenFirewallWidget("services" => ["service:sshd"]),
            id: "firewall"
          ),
+        @service_status.widget
        )
     end
   
