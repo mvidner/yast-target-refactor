@@ -1,7 +1,7 @@
 # Simple example to demonstrate object API for CWM
 
 require_relative "example_helper"
-#require './src/clients/TargetData.rb'
+require './src/lib/TargetData.rb'
 require "cwm/widget"
 require "ui/service_status"
 require "yast"
