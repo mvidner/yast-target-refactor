@@ -1,7 +1,7 @@
 # Simple example to demonstrate object API for CWM
 
 require_relative "example_helper"
-require './src/clients/TargetData.rb'
+#require './src/clients/TargetData.rb'
 require "cwm/widget"
 require "ui/service_status"
 require "yast"
@@ -632,7 +632,7 @@ module Yast
     include Yast::I18n
     include Yast::UIShortcuts
     include Yast::Logger
-    require './src/clients/TargetData.rb'
+    #require './src/clients/TargetData.rb'
 
     def initialize
        #TargetData.test
