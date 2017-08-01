@@ -1,82 +1,336 @@
-require "yast"
-require "yast2/execute"
+#iqn_name or eui_name would be a MatchData, but target_name would be a string.
+#iqn_name= nil
+#eui_name= nil
+#target_name = nil
+#initiator_name =  nil
 
-module Yast
-  class TargetDataClass
-    def GetNetConfig
-       ip_list = Array.new
-       re_ipv4 = Regexp.new(/[\d+\.]+\//)
-       re_ipv6 = Regexp.new(/[\w+\:]+\//)
-       ret = Yast::Execute.locally("ip", "a", stdout: :capture)
-       ip = ret.split("\n")
-       ip.each do |line|
-         line = line.strip
-         if(line.include?("inet") && !line.include?("deprecated")) # don't show deprecated IPs
-           if line.include?("inet6")
-             ip_str = re_ipv6.match(line).to_s.gsub!("/","")
-             if ip_str.start_with?("::1")
-               next
-             elsif ip_str.start_with?("fe80:")
-               next
-             else
-               p ip_str
-               ip_list.push(ip_str)
-             end
-           else
-             #delete "/", and drop 127.x.x.x locall address
-             ip_str = re_ipv4.match(line).to_s.gsub!("/","")
-             #p ip_str
-             if ip_str.start_with?("127.")
-               next
-             else
-               p ip_str
-               ip_list.push(ip_str)
-             end
-           end
-         end
-       end
-       puts "testtesttest111111"
-       return ip_list
-    end
-
-
-
-   #
-    # Get list of IP addresses (filters stdout of 'ip addr show')
-    #
-    # @return [Array]<String> list of IP addresses (IPv4 and IPv6), if no IP is found
-    #                         returns array with an empty string element
-    #
-    def GetIpAddr
-      ip_list = GetNetConfig()
-      ip_list.select! do |line|
-        line.include?("inet") && !line.include?("deprecated") # don't show deprecated IPs
-      end
-
-      ip_list = ip_list.map do |ip|
-        ip.lstrip!
-        case ip
-        when /^inet *([.\d]+)\/.*/
-          $1
-        when /^inet6 *([.:\w]+)\/.*/
-          $1
-        else
-          ip
-        end
-      end
-
-      ip_list.reject! do |address|
-        address.start_with?("127.") ||  # local IPv4
-          address.start_with?("::1") || # local IPv6
-          address.start_with?("fe80:")  # scope link IPv6
-      end
-
-      ip_list = [""] if ip_list.empty?
-      Builtins.y2milestone("GetIpAddr: %1", ip_list)
-      deep_copy(ip_list)
-    end
-
-
-    
+#class ACL_group is the acls group under a iSCSI entry
+class ACL_group
+  @initiator_rules_hash_list = nil
+  @up_level_TPG = nil
+  def initialize()
+    #puts "initialized a acls group"
+    @initiator_rules_hash_list = Hash.new
+  end
+  def store_rule(name)
+    @initiator_rules_hash_list.store(name, ACL_rule.new(name))
+  end
+  def fetch_rule(name)	
+    @initiator_rules_hash_list.fetch(name)
   end
 end
+
+#class ACL_rule is the acl rule for a specific initaitor
+class ACL_rule
+  @initiator_name = nil
+  @userid = nil
+  @password = nil
+  @mutual_userid = nil
+  @multual_password = nil
+  @mapped_luns_hash_list = nil
+  def initialize(name)
+    @initiator_name =name
+    @mapped_luns_hash_list = Hash.new
+  end
+  def store_userid(id)
+    @userid = id
+  end
+  def fetch_userid()
+    @userid
+  end
+  def store_password(password)
+    @password = password
+  end
+  def fetch_password()
+    @password
+  end
+  def store_mutual_userid(id)
+    @mutual_userid = id
+  end
+  def fetch_mutual_userid()
+    @mutual_userid
+  end
+  def store_mutual_password(password)
+    @mutual_password = password
+  end
+  def fetch_mutual_password()
+    @mutual_password
+  end
+  def store_mapped_lun(mapping_lun_number)
+    @mapped_luns_hash_list.store(mapping_lun_number, Mapped_LUN.new(mapping_lun_number))
+  end
+  def fetch_mapped_lun(mapping_lun_number)
+     @mapped_luns_hash_list.fetch(mapping_lun_number)
+  end 
+end
+
+class Mapped_LUN
+  @mapping_lun_number = nil
+  @mapped_lun_number = nil
+
+  def initialize(mapping_lun_num)
+    @mapping_lun_number = mapping_lun_num
+  end
+  
+  def store_mapping_lun_number(num)
+    @mapping_lun_number = num
+  end
+  def store_mapped_lun_number(num)
+    @mapped_lun_number = num
+  end
+  def fetch_mapping_lun_number()
+    @mapping_lun_number
+  end
+  def fetch_mapped_lun_number()
+    @mapped_lun_number
+  end
+end
+
+class TPG
+  @tpg_number = nil
+  @acls_hash_list = nil
+  @up_level_target = nil
+  def initialize(number)
+    #printf("Create a TPG with number %d.\n",number)
+    @tpg_number = number
+    @acls_hash_list = Hash.new 
+  end
+  def fetch_tpg_number()
+    @tpg_number
+  end
+  #for now, we only have one acl group in a tpg, called "acls", so we only have one key-value pair
+  #in the hash. The key is fixed "acls" in store and fetch. We have a paremeter acls_name 
+  #in store_acl() and fetch_acl() for further update. 
+  def store_acls(acls_name)
+    @acls_hash_list.store("acls", ACL_group.new())
+  end
+  def fetch_acls(acls_name)
+     @acls_hash_list.fetch("acls")
+  end 
+end
+
+class Target
+  @target_name=nil
+  @tpg_hash_list=nil
+  @luns={}
+  def initialize(name)
+    #printf("Initializing a target, name is %s.\n",name)
+    @target_name = name
+    @tpg_hash_list = Hash.new
+  end
+  def store_tpg(tpg_number)
+    @tpg_hash_list.store(tpg_number, TPG.new(tpg_number))
+  end
+  def fetch_tpg(tpg_number)
+     @tpg_hash_list.fetch(tpg_number)
+  end
+  def fetch_target_name()
+    @target_name
+  end
+end
+
+class TargetList
+  @target_hash_list = nil
+  def print()
+    @target_hash_list.each do |key, value|
+     p value
+    end
+  end
+
+  def print_target_names()
+    @target_hash_list.each do |key, value|
+      p key
+    end
+  end
+  def initialize()
+    @target_hash_list = Hash.new
+  end
+  def store_target(target_name)
+    @target_hash_list.store(target_name, Target.new(target_name))
+  end
+  def fetch_target(target_name)
+     @target_hash_list.fetch(target_name)
+  end
+
+end
+
+re_iqn_target = Regexp.new(/iqn\.\d{4}\-\d{2}\.[\w\.:\-]+\s\.+\s\[TPGs:\s\d+\]/)
+re_iqn_name = Regexp.new(/iqn\.\d{4}-\d{2}\.[\w\.:\-]+/)
+
+re_eui_target = Regexp.new(/eui\.\w+\s\.+\s\[TPGs:\s\d+\]/)
+re_eui_name = Regexp.new(/eui\.\w+/)
+
+re_tpg = Regexp.new(/tpg\d+\s/)
+
+re_acls_group = Regexp.new(/acls\s\.+\s\[ACLs\:\s\d+\]/)
+
+re_acl_iqn_rule = Regexp.new(/iqn\.\d{4}\-\d{2}\.[\w\.:\-]+\s\.+\s\[[\w\-\s\,]*Mapped\sLUNs\:\s\d+\]/)
+re_acl_eui_rule = Regexp.new(/eui\.\w+\s\.+\s\[[\w\-\s\,]*Mapped\sLUNs\:\s\d+\]/)
+
+#match a line like this:
+#mapped_lun1 .......................................................................... [lun2 fileio/iscsi_file1 (rw)]
+re_mapped_lun_line = Regexp.new(/mapped_lun\d+\s\.+\s\[lun\d+\s/)
+
+# match the mapped lun like "mapped_lun1", we matched one more \s here to aovid bugs in configfs / targetcli mismatch, need to strip when use
+re_mapping_lun = Regexp.new(/mapped_lun\d+\s/)
+
+#match the mapped lun, like "[lun2" in "[lun2 fileio/iscsi_file1 (rw)]", we matched one more \s to avoid bugs.
+re_mapped_lun = Regexp.new(/\[lun\d+\s/)
+
+#iqn_name or eui_name would be a MatchData, but target_name would be a string.
+iqn_name= nil
+eui_name= nil
+target_name = nil
+initiator_name =  nil
+
+#tgp_name would be a MatchData, but tgp_num should be a string.
+tpg_name = nil
+tpg_num = nil
+
+#the string for a mapping lun, like mapped_lun1
+mapping_lun_name = nil
+#the string for a mapped lun, like "lun2" in "[lun2 fileio/iscsi_file1 (rw)]"
+mapped_lun_name = nil
+
+#will store anything match our regexp
+match = nil
+
+# A pointer points to the target in the list that we are handling.
+current_target = nil
+# A pointer points to the tpg in the target that we are handling.
+current_tpg = nil
+# A pointer points to the acls group
+current_acls_group = nil
+#A pointer points to the acl rule for a specific initiator we are handling
+current_acl_rule = nil
+
+# the command need to execute  and the result
+cmd = nil
+cmd_out = nil
+
+
+#TODO: Need to add some error handling code here, like failed to start the service.
+str = `targetcli ls`.split("\n") #This is an arrry now, so that we can analyze the lines one by one
+
+targets_list = TargetList.new
+
+
+str.each do |line|
+  #handle iqn targets here.
+  if re_iqn_target.match(line)
+    #puts line
+    if iqn_name = re_iqn_name.match(line)  
+     # puts iqn_name
+      target_name=iqn_name.to_s
+      targets_list.store_target(target_name)
+      current_target = targets_list.fetch_target(target_name)
+    end
+  end
+
+  #handle eui targets here.
+  if re_eui_target.match(line)
+    #puts line
+    if eui_name = re_eui_name.match(line)
+     # puts eui_name
+      target_name=eui_name.to_s
+      targets_list.store_target(target_name)
+      current_target = targets_list.fetch_target(target_name)
+    end
+  end
+
+ #handle TPGs here.
+  if tpg_name = re_tpg.match(line)
+    #puts tpg_name.to_s.strip
+    #find the tpg number
+    tpg_num = /\d+/.match(tpg_name.to_s.strip)
+    current_target.store_tpg(tpg_num.to_s.strip)
+    current_tpg = current_target.fetch_tpg(tpg_num.to_s.strip)
+  end
+
+#handle ACLs group here
+  if re_acls_group.match(line)
+     #puts line
+     current_tpg.store_acls("acls")
+     current_acls_group = current_tpg.fetch_acls("acls")
+  end
+  
+#handle acl rules for an IQN initaitor here
+  if re_acl_iqn_rule.match(line)
+    #puts line
+    #handle_acl_rule(match)
+    initiator_name = re_iqn_name.match(line).to_s
+    #puts initiator_name	
+    current_acls_group.store_rule(initiator_name)
+    current_acl_rule = current_acls_group.fetch_rule(initiator_name)
+    #get authentication information here.
+    #get userid
+    cmd = "targetcli iscsi/" + current_target.fetch_target_name() + "/tpg" + current_tpg.fetch_tpg_number() + "/acls/" + initiator_name + "/ get auth userid"
+    cmd_out = `#{cmd}`
+    current_acl_rule.store_userid(cmd_out[7 , cmd.length])
+   # puts current_acl_rule.fetch_userid()
+    #get password
+    cmd = "targetcli iscsi/" + current_target.fetch_target_name() + "/tpg" + current_tpg.fetch_tpg_number() + "/acls/" + initiator_name + "/ get auth password"
+    cmd_out = `#{cmd}`
+    current_acl_rule.store_password(cmd_out[9 , cmd.length])
+   # puts current_acl_rule.fetch_password()
+    #get mutual_userid
+    cmd = "targetcli iscsi/" + current_target.fetch_target_name() + "/tpg" + current_tpg.fetch_tpg_number() + "/acls/" + initiator_name + "/ get auth mutual_userid"
+    cmd_out = `#{cmd}`
+    current_acl_rule.store_mutual_userid(cmd_out[14 , cmd.length])
+    #puts current_acl_rule.fetch_mutual_userid()
+    #get mutual_password
+    cmd = "targetcli iscsi/" + current_target.fetch_target_name() + "/tpg" + current_tpg.fetch_tpg_number() + "/acls/" + initiator_name + "/ get auth mutual_password"
+    cmd_out = `#{cmd}`
+    current_acl_rule.store_mutual_password(cmd_out[16 , cmd.length])
+    #puts current_acl_rule.fetch_mutual_password()
+  end
+  
+  #handle acl rules for an EUI initaitor here
+  if re_acl_eui_rule.match(line)
+    #puts line
+    #handle_acl_rule(match)
+    initiator_name = re_eui_name.match(line).to_s
+    #puts initiator_name	
+    current_acls_group.store_rule(initiator_name)
+    current_acl_rule = current_acls_group.fetch_rule(initiator_name)
+    #get authentication information here.
+    #get userid
+    cmd = "targetcli iscsi/" + current_target.fetch_target_name() + "/tpg" + current_tpg.fetch_tpg_number() + "/acls/" + initiator_name + "/ get auth userid"
+    cmd_out = `#{cmd}`
+    current_acl_rule.store_userid(cmd_out[7 , cmd.length])
+    #puts current_acl_rule.fetch_userid()
+    #get password
+    cmd = "targetcli iscsi/" + current_target.fetch_target_name() + "/tpg" + current_tpg.fetch_tpg_number() + "/acls/" + initiator_name + "/ get auth password"
+    cmd_out = `#{cmd}`
+    current_acl_rule.store_password(cmd_out[9 , cmd.length])
+  #  puts current_acl_rule.fetch_password()
+    #get mutual_userid
+    cmd = "targetcli iscsi/" + current_target.fetch_target_name() + "/tpg" + current_tpg.fetch_tpg_number() + "/acls/" + initiator_name + "/ get auth mutual_userid"
+    cmd_out = `#{cmd}`
+    current_acl_rule.store_mutual_userid(cmd_out[14 , cmd.length])
+    #puts current_acl_rule.fetch_mutual_userid()
+    #get mutual_password
+    cmd = "targetcli iscsi/" + current_target.fetch_target_name() + "/tpg" + current_tpg.fetch_tpg_number() + "/acls/" + initiator_name + "/ get auth mutual_password"
+    cmd_out = `#{cmd}`
+    current_acl_rule.store_mutual_password(cmd_out[16 , cmd.length])
+    #puts current_acl_rule.fetch_mutual_password()
+  end
+
+  #handle mapped luns here
+  if re_mapped_lun_line.match(line)
+    puts line
+    mapping_lun_name = re_mapping_lun.match(line).to_s.strip
+    puts mapping_lun_name
+    mapped_lun_name = re_mapped_lun.match(line).to_s.strip
+    mapped_lun_name.slice!("[")
+    puts mapped_lun_name
+    mapping_lun_num = mapping_lun_name[10,mapping_lun_name.length]
+    current_acl_rule.store_mapped_lun(mapping_lun_num)
+    mapped_lun_num = mapped_lun_name[3,mapped_lun_name.length]
+    current_acl_rule.fetch_mapped_lun(mapping_lun_num).store_mapped_lun_number(mapped_lun_num)
+  end
+  
+end
+targets_list.print()
+targets_list.print_target_names()
+
