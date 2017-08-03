@@ -6,6 +6,8 @@ require './src/lib/TargetData.rb'
 require "cwm/widget"
 require "ui/service_status"
 require "yast"
+require "cwm/table"
+require "yast2/execute"
 
 Yast.import "CWM"
 Yast.import "CWMTab"
@@ -14,10 +16,10 @@ Yast.import "CWMServiceStart"
 Yast.import "Popup"
 Yast.import "Wizard"
 Yast.import "CWMFirewallInterfaces"
+Yast.import "SuSEFirewall"
 Yast.import "Service"
 Yast.import "CWMServiceStart"
 Yast.import "UI"
-
 
 
 class NoDiscoveryAuth_widget < ::CWM::CheckBox
@@ -237,16 +239,20 @@ module Yast
     include Yast::UIShortcuts
     def initialize
      #Yast.import "SuSEFirewall"
-      self.initial = false
+      self.initial = true
       @service = Yast::SystemdService.find("targetcli")
       @service_status = ::UI::ServiceStatus.new(@service, reload_flag: true, reload_flag_label: :restart)
-      #@fire_wall_service = Yast::FirewallServices.new
+      #self.Read()
+      #SuSEFirewall.Read()
     end
 
+    def Read()
+      SuSEFirewall.Read()
+    end
     def contents
       HBox(
          ::CWM::WrapperWidget.new(
-           CWMFirewallInterfaces.CreateOpenFirewallWidget("services" => ["service:sshd"]),
+           CWMFirewallInterfaces.CreateOpenFirewallWidget("services" => ["service:target"]),
            id: "firewall"
          ),
         @service_status.widget
@@ -523,7 +529,40 @@ class AddTargetWidget < CWM::CustomWidget
   end
 end
 
+class TargetTable < CWM::Table
+  def initialize()
+    puts "initialize a TargetTable"
+    p caller
+    @targets = Array.new
+    @targets.push([3, "iqn.2017-04.suse.com.lszhu", 1, "Enabled"])
+    @targets_names = $target_data.get_target_names_array
+    p @targets_names
+  end
+  def header
+    ["Targets", "Portal Group", "TPG Status"]
+  end
 
+  def items
+    @targets
+  end
+
+  def get_selected
+    return self.value
+  end
+
+ #this function will add a target in the table, the parameter item is an array
+  def add_target_item(item)
+  end
+
+  #this function will remove a target from the table.
+  def remove_target_item(id)
+  end
+  
+  def update_table
+    @targets.push([1, "iqn.2017-04.suse.com.test", 1, "Enabled"])
+    self.change_items(@targets)
+  end
+end
 
 
 class TargetsTableWidget < CWM::CustomWidget
@@ -533,17 +572,19 @@ class TargetsTableWidget < CWM::CustomWidget
   include Yast::Logger
   def initialize
     self.handle_all_events = true
+    @target_table = TargetTable.new
   end
 
   def contents
     VBox(
-      Table(
-         Id(:targets_table),
-         Header("Targets", "Portal Group", "TPG Status"),
-           [
-             Item(Id(1), "iqn.2017-04.suse.com.lszhu.target.sn.abcdefghisdljhlshjl", 1,"Enabled"),
-           ]
-       ),
+      #Table(
+        # Id(:targets_table),
+         #Header("Targets", "Portal Group", "TPG Status"),
+           #[
+             #Item(Id(1), "iqn.2017-04.suse.com.lszhu.target.sn.abcdefghisdljhlshjl", 1,"Enabled"),
+           #]
+       #),
+       @target_table,
        HBox(
          PushButton(Id(:add), _("Add")),
          PushButton(Id(:edit), _("Edit")),
@@ -562,7 +603,11 @@ class TargetsTableWidget < CWM::CustomWidget
         Yast::UI.ChangeWidget(Id(:targets_table), Cell(1, 1), "testtest")
         add_target_page = AddTargetWidget.new
         contents = VBox(add_target_page,HStretch(),VStretch())
- 
+
+
+	printf("The selected value is %s.\n", @target_table.get_selected())
+	#$target_data.print
+ 	@target_table.update_table
         Yast::Wizard.CreateDialog
         CWM.show(contents, caption: _("Add iSCSI Target"))
          Yast::Wizard.CloseDialog

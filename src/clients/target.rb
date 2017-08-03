@@ -51,4 +51,5 @@ module Yast
   end
 end
 
+$target_data = TargetData.new
 Yast::ExampleDialog.new.run
