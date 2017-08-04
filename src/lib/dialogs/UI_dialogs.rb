@@ -295,6 +295,8 @@ end
 
 class TargetsTab < ::CWM::Tab
   def initialize
+    @target_table_widget = TargetsTableWidget.new
+    puts "Initialized a TargetsTab class."
     self.initial = false
   end
 
@@ -302,7 +304,7 @@ class TargetsTab < ::CWM::Tab
     VBox(
       HStretch(),
       VStretch(),
-      TargetsTableWidget.new
+      @target_table_widget
     )
   end
 
@@ -532,7 +534,7 @@ end
 class TargetTable < CWM::Table
   def initialize()
     puts "initialize a TargetTable"
-    p caller
+    #p caller
     @targets = Array.new
     @targets.push([3, "iqn.2017-04.suse.com.lszhu", 1, "Enabled"])
     @targets_names = $target_data.get_target_names_array
@@ -571,6 +573,8 @@ class TargetsTableWidget < CWM::CustomWidget
   include Yast::UIShortcuts
   include Yast::Logger
   def initialize
+    puts "Initialized a TargetsTableWidget class"
+    p caller
     self.handle_all_events = true
     @target_table = TargetTable.new
   end
