@@ -536,16 +536,27 @@ class TargetTable < CWM::Table
     puts "initialize a TargetTable"
     #p caller
     @targets = Array.new
-    @targets.push([3, "iqn.2017-04.suse.com.lszhu", 1, "Enabled"])
+    #@targets.push([3, "iqn.2017-04.suse.com.lszhu", 1, "Enabled"])
     @targets_names = $target_data.get_target_names_array
-    p @targets_names
+    #p @targets_names
   end
+
+  def generate_items
+    puts "generate_items is called.\n"
+    items_array = Array.new
+    @targets_names.each do |elem|
+      items_array.push([rand(9999), elem, 1 , "Enabled"])
+    end
+    return items_array
+  end
+
   def header
     ["Targets", "Portal Group", "TPG Status"]
   end
 
   def items
-    @targets
+    @targets = generate_items()
+    return @targets
   end
 
   def get_selected
@@ -558,6 +569,14 @@ class TargetTable < CWM::Table
 
   #this function will remove a target from the table.
   def remove_target_item(id)
+    #p @targets
+    @targets.each do |elem|
+      printf("id is %d.\n", id)
+      #if elem[0] == id
+        printf("elem[0] is %d.\n", elem[0]);
+        p elem
+      #end
+    end
   end
   
   def update_table
@@ -577,6 +596,9 @@ class TargetsTableWidget < CWM::CustomWidget
     p caller
     self.handle_all_events = true
     @target_table = TargetTable.new
+    p "@target_table is"
+    p @target_table
+    @add_target_page = AddTargetWidget.new
   end
 
   def contents
@@ -604,9 +626,9 @@ class TargetsTableWidget < CWM::CustomWidget
         puts "Clicked Add button!"
         puts Yast::UI.QueryWidget(Id(:targets_table), :CurrentItem)
         puts Yast::UI.QueryWidget(Id(:targets_table), :Items)
-        Yast::UI.ChangeWidget(Id(:targets_table), Cell(1, 1), "testtest")
-        add_target_page = AddTargetWidget.new
-        contents = VBox(add_target_page,HStretch(),VStretch())
+        #Yast::UI.ChangeWidget(Id(:targets_table), Cell(1, 1), "testtest")
+        #add_target_page = AddTargetWidget.new
+        contents = VBox(@add_target_page,HStretch(),VStretch())
 
 
 	printf("The selected value is %s.\n", @target_table.get_selected())
@@ -614,7 +636,12 @@ class TargetsTableWidget < CWM::CustomWidget
  	@target_table.update_table
         Yast::Wizard.CreateDialog
         CWM.show(contents, caption: _("Add iSCSI Target"))
-         Yast::Wizard.CloseDialog
+        Yast::Wizard.CloseDialog
+      when :delete
+        id = @target_table.get_selected()
+        puts "Clicked Delete button"
+        printf("The selected value is %s.\n", id)
+        @target_table.remove_target_item(id) 
          
      end
      nil

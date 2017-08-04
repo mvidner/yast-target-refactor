@@ -145,7 +145,7 @@ class TargetList
     target_names_array = Array.new
     @target_hash_list.each do |key, value|
       target_names_array.push(key)
-      p key
+      #p key
     end
     return target_names_array
   end
@@ -348,7 +348,7 @@ class TargetData
   end # end of the function
 
   def print()
-    @targets_list.print()
+    #@targets_list.print()
     #@targets_list.print_target_names()
   end
 
