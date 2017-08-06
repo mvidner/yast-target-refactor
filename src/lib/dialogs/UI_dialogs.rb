@@ -536,8 +536,9 @@ class TargetTable < CWM::Table
     puts "initialize a TargetTable"
     #p caller
     @targets = Array.new
-    #@targets.push([3, "iqn.2017-04.suse.com.lszhu", 1, "Enabled"])
     @targets_names = $target_data.get_target_names_array
+    @targets = generate_items()
+    #@targets.push([3, "iqn.2017-04.suse.com.lszhu", 1, "Enabled"])
     #p @targets_names
   end
 
@@ -555,8 +556,8 @@ class TargetTable < CWM::Table
   end
 
   def items
-    @targets = generate_items()
-    return @targets
+    #@targets = generate_items()
+    @targets
   end
 
   def get_selected
