@@ -405,6 +405,7 @@ end
 
 class IpSelectionComboBox < CWM::ComboBox
   def initialize()
+    @addrs = nil
     #@config = myconfig
   end
 
@@ -454,13 +455,13 @@ class IpSelectionComboBox < CWM::ComboBox
          end
        end
      end
-     puts "testtesttest111111"
      return ip_list
   end
 
   def addresses
     #["first", "second", "third","forth"]
-    self.GetNetConfig
+    @addrs = self.GetNetConfig
+    return @addrs
   end
   
   def items
@@ -472,7 +473,8 @@ class IpSelectionComboBox < CWM::ComboBox
   end
 
   def get_addr
-   return addresses[self.value[0]]
+   #return addresses[self.value[0]]
+   return self.value
   end
 
 
@@ -492,13 +494,19 @@ class AddTargetWidget < CWM::CustomWidget
   @target_portal_group_field = nil
   @target_port_num_field = nil
   @target_bind_all_ip_checkbox = nil
+  @iscsi_name_length_max = 223
   def initialize
     self.handle_all_events = true
-    @target_name_input_field = TargetNameInput.new("iqn.2017-04.suse.com.prg.test")
-    @target_identifier_input_field = TargetIdentifierInput.new("Random 12345")
+    @popup_dialog = Yast::PopupClass.new
+    @time = Time.new
+    @target_name_input_field = TargetNameInput.new("iqn." + @time.year.to_s + "-" + @time.month.to_s + ".com.example")
+    @target_identifier_input_field = TargetIdentifierInput.new(SecureRandom.hex(10))
     @target_portal_group_field = PortalGroupInput.new(5)
     @target_port_num_field = TargetPortNumberInput.new(3260)
-    #@target_bind_all_ip_checkbox = BindAllIP.new()
+    @IP_selsection_box = IpSelectionComboBox.new
+    @target_bind_all_ip_checkbox = BindAllIP.new
+    @use_login_auth = UseLoginAuth.new
+    @lun_table = LUNsTableWidget.new
   end
 
   def contents
@@ -510,23 +518,48 @@ class AddTargetWidget < CWM::CustomWidget
         @target_portal_group_field
       ),
       HBox(
-        IpSelectionComboBox.new,
+        @IP_selsection_box,
         @target_port_num_field,
       ),
       VBox(
-        BindAllIP.new,
-        UseLoginAuth.new,
+        @target_bind_all_ip_checkbox,
+        @use_login_auth,
       ),
-      LUNsTableWidget.new,
+      @lun_table,
     )
+  end
+
+  def create_target_name_empty_warning_dialog
+    #Yast::UI.OpenDialog(
+       #VBox(
+         #headings,
+         #VSpacing(1),
+         #contents,
+         #PushButton(Id(:ok), Yast::Label.OKButton),
+         #HSpacing(1),
+         #ending_buttons
+      #)
+    #)
+    #Yast::UI.CloseDialog
+    @popup_dialog.AnyMessage("Tareget Name Error", "Target name can not be empty!") 
+    true
   end
 
   def handle(event)
     puts event 
-    puts @target_name_input_field.value
-    puts @target_identifier_input_field.value
-    puts @target_portal_group_field.value
-    puts @target_port_num_field.value
+    #puts @target_name_input_field.value
+    #puts @target_identifier_input_field.value
+    #puts @target_portal_group_field.value
+    #puts @target_port_num_field.value
+    case event["ID"]
+      when :add
+        puts "clicked Add."
+        puts @target_name_input_field.value
+        if @target_name_input_field.value.empty?
+          puts "target name is empty!!"
+        end
+        self.create_target_name_empty_warning_dialog
+    end
     nil
   end
 end
@@ -572,17 +605,21 @@ class TargetTable < CWM::Table
   def remove_target_item(id)
     #p @targets
     @targets.each do |elem|
-      printf("id is %d.\n", id)
-      #if elem[0] == id
-        printf("elem[0] is %d.\n", elem[0]);
+      #printf("id is %d.\n", id)
+      if elem[0] == id
+        #printf("elem[0] is %d.\n", elem[0]);
         p elem
-      #end
+      end
+      @targets.delete_if{|elem| elem[0] == id}
     end
+       p @targets
+       update_table(@targets)
+       
   end
   
-  def update_table
-    @targets.push([1, "iqn.2017-04.suse.com.test", 1, "Enabled"])
-    self.change_items(@targets)
+  def update_table(items)
+    #@targets.push([1, "iqn.2017-04.suse.com.test", 1, "Enabled"])
+    self.change_items(items)
   end
 end
 
@@ -597,8 +634,8 @@ class TargetsTableWidget < CWM::CustomWidget
     p caller
     self.handle_all_events = true
     @target_table = TargetTable.new
-    p "@target_table is"
-    p @target_table
+    #p "@target_table is"
+    #p @target_table
     @add_target_page = AddTargetWidget.new
   end
 
@@ -627,14 +664,8 @@ class TargetsTableWidget < CWM::CustomWidget
         puts "Clicked Add button!"
         puts Yast::UI.QueryWidget(Id(:targets_table), :CurrentItem)
         puts Yast::UI.QueryWidget(Id(:targets_table), :Items)
-        #Yast::UI.ChangeWidget(Id(:targets_table), Cell(1, 1), "testtest")
-        #add_target_page = AddTargetWidget.new
         contents = VBox(@add_target_page,HStretch(),VStretch())
 
-
-	printf("The selected value is %s.\n", @target_table.get_selected())
-	#$target_data.print
- 	@target_table.update_table
         Yast::Wizard.CreateDialog
         CWM.show(contents, caption: _("Add iSCSI Target"))
         Yast::Wizard.CloseDialog
