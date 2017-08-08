@@ -501,7 +501,7 @@ class AddTargetWidget < CWM::CustomWidget
     @time = Time.new
     @target_name_input_field = TargetNameInput.new("iqn." + @time.year.to_s + "-" + @time.month.to_s + ".com.example")
     @target_identifier_input_field = TargetIdentifierInput.new(SecureRandom.hex(10))
-    @target_portal_group_field = PortalGroupInput.new(5)
+    @target_portal_group_field = PortalGroupInput.new(1)
     @target_port_num_field = TargetPortNumberInput.new(3260)
     @IP_selsection_box = IpSelectionComboBox.new
     @target_bind_all_ip_checkbox = BindAllIP.new
@@ -529,20 +529,8 @@ class AddTargetWidget < CWM::CustomWidget
     )
   end
 
-  def create_target_name_empty_warning_dialog
-    #Yast::UI.OpenDialog(
-       #VBox(
-         #headings,
-         #VSpacing(1),
-         #contents,
-         #PushButton(Id(:ok), Yast::Label.OKButton),
-         #HSpacing(1),
-         #ending_buttons
-      #)
-    #)
-    #Yast::UI.CloseDialog
-    @popup_dialog.AnyMessage("Tareget Name Error", "Target name can not be empty!") 
-    true
+  def popup_warning_dialog(heading, message)
+    @popup_dialog.AnyMessage(heading, message) 
   end
 
   def handle(event)
@@ -552,13 +540,26 @@ class AddTargetWidget < CWM::CustomWidget
     #puts @target_portal_group_field.value
     #puts @target_port_num_field.value
     case event["ID"]
-      when :add
-        puts "clicked Add."
+      when :next
+        puts "clicked Next."
         puts @target_name_input_field.value
         if @target_name_input_field.value.empty?
-          puts "target name is empty!!"
+          self.popup_warning_dialog("Error", "Target name can not be empty")
         end
-        self.create_target_name_empty_warning_dialog
+        
+        if @target_portal_group_field.value.to_s.empty?
+          self.popup_warning_dialog("Error", "Portal group can not be empty")
+        end
+        
+      when :add
+        file = UI.AskForExistingFile("/", "", _("Select file or device"))
+        if file == nil
+          puts "No file selected"
+        else
+          p file
+          p File.ftype(file)
+        end
+        
     end
     nil
   end
@@ -683,6 +684,66 @@ class TargetsTableWidget < CWM::CustomWidget
     _("demo help")
   end
 end
+
+class LUNTable < CWM::Table
+  def initialize(target_name)
+    puts "initialize a LUNTable"
+    #p caller
+    @luns = Array.new
+    @targets_names = $target_data.get_target_names_array
+    @targets = generate_items()
+    #@targets.push([3, "iqn.2017-04.suse.com.lszhu", 1, "Enabled"])
+    #p @targets_names
+  end
+
+  def generate_items
+    puts "generate_items is called.\n"
+    items_array = Array.new
+    @targets_names.each do |elem|
+      items_array.push([rand(9999), elem, 1 , "Enabled"])
+    end
+    return items_array
+  end
+
+  def header
+    ["Targets", "Portal Group", "TPG Status"]
+  end
+
+  def items
+    #@targets = generate_items()
+    @targets
+  end
+
+  def get_selected
+    return self.value
+  end
+
+ #this function will add a target in the table, the parameter item is an array
+  def add_target_item(item)
+  end
+
+  #this function will remove a target from the table.
+  def remove_target_item(id)
+    #p @targets
+    @targets.each do |elem|
+      #printf("id is %d.\n", id)
+      if elem[0] == id
+        #printf("elem[0] is %d.\n", elem[0]);
+        p elem
+      end
+      @targets.delete_if{|elem| elem[0] == id}
+    end
+       p @targets
+       update_table(@targets)
+       
+  end
+  
+  def update_table(items)
+    #@targets.push([1, "iqn.2017-04.suse.com.test", 1, "Enabled"])
+    self.change_items(items)
+  end
+end
+
 
 class LUNsTableWidget < CWM::CustomWidget
   include Yast
