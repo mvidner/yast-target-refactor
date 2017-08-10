@@ -498,8 +498,9 @@ class AddTargetWidget < CWM::CustomWidget
   def initialize
     self.handle_all_events = true
     @popup_dialog = Yast::PopupClass.new
-    @time = Time.new
-    @target_name_input_field = TargetNameInput.new("iqn." + @time.year.to_s + "-" + @time.month.to_s + ".com.example")
+    time = Time.new
+    date_str = time.strftime("%Y-%m")
+    @target_name_input_field = TargetNameInput.new("iqn." + date_str + ".com.example")
     @target_identifier_input_field = TargetIdentifierInput.new(SecureRandom.hex(10))
     @target_portal_group_field = PortalGroupInput.new(1)
     @target_port_num_field = TargetPortNumberInput.new(3260)
@@ -550,6 +551,11 @@ class AddTargetWidget < CWM::CustomWidget
         if @target_portal_group_field.value.to_s.empty?
           self.popup_warning_dialog("Error", "Portal group can not be empty")
         end
+
+        cmd = "targetcli iscsi/ create " + @target_name_input_field.value
+        p cmd
+        ret = Yast::Execute.locally("targetcli","iscsi/ create", @target_name_input_field.value,stdout: :capture)
+        p ret
         
       when :add
         file = UI.AskForExistingFile("/", "", _("Select file or device"))
