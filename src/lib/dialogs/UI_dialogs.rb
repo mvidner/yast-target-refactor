@@ -489,14 +489,9 @@ class AddTargetWidget < CWM::CustomWidget
   include Yast::I18n
   include Yast::UIShortcuts
   include Yast::Logger
-  @target_name_input_field = nil
-  @target_identifier_input_field = nil
-  @target_portal_group_field = nil
-  @target_port_num_field = nil
-  @target_bind_all_ip_checkbox = nil
-  @iscsi_name_length_max = 223
   def initialize
     self.handle_all_events = true
+    @iscsi_name_length_max = 223
     @popup_dialog = Yast::PopupClass.new
     time = Time.new
     date_str = time.strftime("%Y-%m")
@@ -552,10 +547,14 @@ class AddTargetWidget < CWM::CustomWidget
           self.popup_warning_dialog("Error", "Portal group can not be empty")
         end
 
-        cmd = "targetcli iscsi/ create " + @target_name_input_field.value
-        p cmd
-        ret = Yast::Execute.locally("targetcli","iscsi/ create", @target_name_input_field.value,stdout: :capture)
-        p ret
+        cmd = "targetcli"
+        printf("target name has %d bytes", @target_name_input_field.value.bytesize)
+        if @target_name_input_field.value.bytesize > @iscsi_name_length_max
+          self.popup_warning_dialog("Error", "Target name can not be longger than 223 bytes!")
+        end
+        p1 = "iscsi/ create"
+        p2 = @target_name_input_field.value+":"+@target_identifier_input_field.value.to_s
+        ret = Yast::Execute.locally(cmd, p1, p2, stdout: :capture)
         
       when :add
         file = UI.AskForExistingFile("/", "", _("Select file or device"))
@@ -592,7 +591,7 @@ class TargetTable < CWM::Table
   end
 
   def header
-    ["Targets", "Portal Group", "TPG Status"]
+    [_("Targets"), _("Portal Group"), _("TPG Status")]
   end
 
   def items
