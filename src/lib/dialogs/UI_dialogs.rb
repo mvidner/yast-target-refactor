@@ -491,6 +491,7 @@ class AddTargetWidget < CWM::CustomWidget
   include Yast::Logger
   def initialize
     self.handle_all_events = true
+    printf("initialized an AddTargetWidget.11111111111111111111\n ")
     @iscsi_name_length_max = 223
     @popup_dialog = Yast::PopupClass.new
     time = Time.new
@@ -675,6 +676,7 @@ class TargetsTableWidget < CWM::CustomWidget
         Yast::Wizard.CreateDialog
         CWM.show(contents, caption: _("Add iSCSI Target"))
         Yast::Wizard.CloseDialog
+        @add_target_page = AddTargetWidget.new
       when :delete
         id = @target_table.get_selected()
         puts "Clicked Delete button"
