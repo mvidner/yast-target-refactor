@@ -20,7 +20,7 @@ Yast.import "SuSEFirewall"
 Yast.import "Service"
 Yast.import "CWMServiceStart"
 Yast.import "UI"
-
+Yast.import "TablePopup"
 
 class NoDiscoveryAuth_widget < ::CWM::CheckBox
   def initialize
@@ -506,6 +506,9 @@ class AddTargetWidget < CWM::CustomWidget
     @lun_table = LUNsTableWidget.new
   end
 
+  def id
+    id(:target)
+  end
   def contents
    
     VBox(
@@ -532,16 +535,15 @@ class AddTargetWidget < CWM::CustomWidget
 
   def handle(event)
     puts event 
-    #puts @target_name_input_field.value
-    #puts @target_identifier_input_field.value
-    #puts @target_portal_group_field.value
-    #puts @target_port_num_field.value
     case event["ID"]
       when :next
         puts "clicked Next."
         puts @target_name_input_field.value
         if @target_name_input_field.value.empty?
           self.popup_warning_dialog("Error", "Target name can not be empty")
+          return
+          #UI.SetFocus(id(:target))
+          #UI.SetFocus(self.widget_id)
         end
         
         if @target_portal_group_field.value.to_s.empty?

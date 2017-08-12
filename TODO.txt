@@ -1,0 +1,1 @@
+after show an error message(like target name empty), it can not resume to the target creation page, but return to the TargetTable page
