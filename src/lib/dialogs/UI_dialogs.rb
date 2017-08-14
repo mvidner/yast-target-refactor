@@ -323,6 +323,16 @@ class TargetNameInput < CWM::InputField
     _("Target")
   end
 
+  def validate
+    if value.empty?
+      Yast::UI.SetFocus(Id(widget_id))
+      Yast::Popup.Error(_("Target name cannot be empty"))
+      false
+    else
+      true
+    end
+  end
+
   def init
     self.value = @config
     printf("TargeteName InputField init, got default value %s.\n",@config)
@@ -536,26 +546,10 @@ class AddTargetWidget < CWM::CustomWidget
       when :next
         puts "clicked Next."
         puts @target_name_input_field.value
-        if @target_name_input_field.value.empty?
-          self.popup_warning_dialog("Error", "Target name can not be empty")
-          #UI.SetFocus(id(:target))
-          UI.SetFocus(Id(self.widget_id))
-          return
-        end
-        
         if @target_portal_group_field.value.to_s.empty?
           self.popup_warning_dialog("Error", "Portal group can not be empty")
         end
 
-        cmd = "targetcli"
-        printf("target name has %d bytes", @target_name_input_field.value.bytesize)
-        if @target_name_input_field.value.bytesize > @iscsi_name_length_max
-          self.popup_warning_dialog("Error", "Target name can not be longger than 223 bytes!")
-        end
-        p1 = "iscsi/ create"
-        p2 = @target_name_input_field.value+":"+@target_identifier_input_field.value.to_s
-        ret = Yast::Execute.locally(cmd, p1, p2, stdout: :capture)
-        
       when :add
         file = UI.AskForExistingFile("/", "", _("Select file or device"))
         if file == nil
@@ -567,6 +561,17 @@ class AddTargetWidget < CWM::CustomWidget
         
     end
     nil
+  end
+
+  def store
+    cmd = "targetcli"
+    printf("target name has %d bytes", @target_name_input_field.value.bytesize)
+    if @target_name_input_field.value.bytesize > @iscsi_name_length_max
+      self.popup_warning_dialog("Error", "Target name can not be longger than 223 bytes!")
+    end
+    p1 = "iscsi/ create"
+    p2 = @target_name_input_field.value+":"+@target_identifier_input_field.value.to_s
+    ret = Yast::Execute.locally(cmd, p1, p2, stdout: :capture)
   end
 end
 
