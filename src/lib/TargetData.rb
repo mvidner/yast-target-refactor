@@ -6,7 +6,33 @@
 
 #class ACL_group is the acls group under a iSCSI entry
 
+class Backstores
+  def initialize()
+    @backstore_path = nil
+    @re_backstore_path = Regexp.new(/\/[\w\/\.]+\s/)
+    #@re_backstore_name = Regexp.new(/\/[\w\/\.]+\s/)
+    @output = Yast::Execute.locally("targetcli", "backstores/ ls", stdout: :capture)
+    @backstores_output = @output.split("\n")
+    #@backstores_list should Hash.new if we need to store storage name like iscsi_sdb
+    @backstores_list = Array.new
+    #p @output
+    self.analyze
+  end
 
+  def analyze
+    @backstores_output.each do |line|
+      if @backstore_path = @re_backstore_path.match(line)
+        @backstores_list.push(@backstore_path.to_s)
+      end
+    end
+    p @backstores_list
+  end
+
+  def get_backstores_list
+    return @backstores_list
+  end
+  
+end
 class ACL_group
   @initiator_rules_hash_list = nil
   @up_level_TPG = nil
@@ -348,7 +374,7 @@ class TargetData
   end # end of the function
 
   def print()
-    #@targets_list.print()
+    @targets_list.print()
     #@targets_list.print_target_names()
   end
 

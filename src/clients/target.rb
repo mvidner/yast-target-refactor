@@ -52,4 +52,7 @@ module Yast
 end
 
 $target_data = TargetData.new
+$back_stores = Backstores.new
+#back_stores.analyze
+#$target_data.print
 Yast::ExampleDialog.new.run
