@@ -505,10 +505,7 @@ class AddTargetWidget < CWM::CustomWidget
     @use_login_auth = UseLoginAuth.new
     @lun_table = LUNsTableWidget.new
   end
-
-  def id
-    id(:target)
-  end
+  
   def contents
    
     VBox(
@@ -541,9 +538,9 @@ class AddTargetWidget < CWM::CustomWidget
         puts @target_name_input_field.value
         if @target_name_input_field.value.empty?
           self.popup_warning_dialog("Error", "Target name can not be empty")
-          return
           #UI.SetFocus(id(:target))
-          #UI.SetFocus(self.widget_id)
+          UI.SetFocus(Id(self.widget_id))
+          return
         end
         
         if @target_portal_group_field.value.to_s.empty?
